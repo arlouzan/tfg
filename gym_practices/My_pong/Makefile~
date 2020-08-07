@@ -1,0 +1,28 @@
+.DEFAULT: help
+help:
+	@echo "make install"
+	@echo "       prepare environment and download dependencies, use only once"
+	@echo "make run"
+	@echo "       run the program"
+
+DIR=$(shell pwd)
+
+install: install-gym install-pygame
+
+install-pygame: install-pip
+	sudo apt-get update
+	python3 -m pip install -U pygame --user
+
+
+install-gym: install-pip
+	sudo apt-get update
+	pip install gym
+
+
+install-pip:
+	sudo apt-get update
+	sudo apt-get install python-pip
+        
+run:
+	python pong.py
+

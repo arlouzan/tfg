@@ -1,0 +1,313 @@
+# -*- coding: utf-8 -*-
+# -------------------------------------------------
+# Importar las librerías
+# -------------------------------------------------
+import pygame, sys, time
+import numpy as np
+from pygame.locals import *
+
+# -------------------------------------------------
+# Constantes
+# -------------------------------------------------
+
+BLANCO = (255,255,255)
+
+# Frames por segundo
+fps = 60
+
+# Resolución de la pantalla
+MaxX = 800
+MaxY = 600
+
+# Movimiento de la raqueta
+velocidadRaquetaY = 5
+
+#AGENTE INTELIGENTE --------------------------------------------------------------
+ENV_OBSERVATION_SPACE_LOW = 0
+ENV_OBSERVATION_SPACE_HIGH = MaxY
+
+#acciones posibles (arriba,quieto,abajo)
+ENV_ACTION_SPACE_N =3
+M = 10
+N = 3
+ #dividimos la matriz Q en trozos para el algoritmo Q learning la idea es que la matriz va a contener un tramo del recorrido total la raqueta
+DISCRETE_RACKET_SIZE = M
+discrete_racket_win_size = (MaxY)/DISCRETE_RACKET_SIZE
+
+LEARNING_RATE = 0.1
+#how important we measure future action over current action
+DISCOUNT = 0.95
+#episodios que vamos a correr el agente
+EPISODES = 10
+
+
+def get_discrete_state(state):
+	discrete_state = (state - ENV_OBSERVATION_SPACE_LOW) / discrete_racket_win_size
+	return int(discrete_state)
+
+# -------------------------------------------------
+# Clases de los objetos del juego
+# -------------------------------------------------
+
+# -------------------------------------------------
+# Raqueta
+
+class Raqueta(pygame.sprite.Sprite):
+    "Las raquetas de ambos jugadores"
+
+    def __init__(self, posicion, posicionMarcador):
+        # Primero invocamos al constructor de la clase padre
+        pygame.sprite.Sprite.__init__(self);
+        # Cargamos la imagen
+        self.imagen = pygame.image.load("resources/raqueta.png");
+        # El rectangulo donde estara la imagen
+        self.rect = self.imagen.get_rect()
+        self.rect.centerx = posicion[0];
+        self.rect.centery = posicion[1];
+        # El resto de atributos
+        self.puntos = 0
+        self.posicionMarcador = posicionMarcador
+        self.tipoLetra = pygame.font.SysFont('arial', 96)
+        self.reward = 0
+
+    # Controla que ninguna raqueta se vaya por arriba o por abajo
+    def controlaY(self):
+        # Si se sale por arriba
+        if self.rect.top <= 0:
+            self.rect.top = 0
+        # Si se sale por abajo
+        if self.rect.bottom >= MaxY:
+            self.rect.bottom = MaxY
+
+
+    # Controla a ver si hay colision con la pelota
+    def colision(self, pelota):
+        return self.rect.colliderect(pelota.rect)
+
+    # Dibuja la raqueta
+    def dibuja(self, pantalla):
+        pantalla.blit(self.imagen, self.rect);
+
+    # Dibuja el marcador
+    def marcador(self, pantalla, color):
+        marcador = self.tipoLetra.render(str(self.puntos), True, color)
+        pantalla.blit(marcador, (self.posicionMarcador[0], self.posicionMarcador[1], 50, 50))
+
+
+# -------------------------------------------------
+# Pelota
+    
+class Pelota(pygame.sprite.Sprite):
+    "La pelota y su comportamiento"
+
+    def __init__(self, sonidoRaqueta, sonidoPunto):
+        # Primero invocamos al constructor de la clase padre
+        pygame.sprite.Sprite.__init__(self);
+        # Cargamos la imagen
+        self.imagen = pygame.image.load('resources/pelota.png');
+        # El rectangulo donde estara la imagen
+        self.rect = self.imagen.get_rect()
+        self.rect.centerx = MaxX/2;
+        self.rect.centery = MaxY/2;
+        # El resto de atributos
+        self.velocidad = [4, 4];
+        self.sonidoRaqueta = sonidoRaqueta
+        self.sonidoPunto = sonidoPunto
+
+    # Actualiza la posicion de la pelota y controla la puntuacion y que no se salga
+    def update(self, jugador1, jugador2):
+
+        # Miramos a ver si hay colision con la raqueta de algún jugador
+        if jugador1.colision(self) or jugador2.colision(self):
+            # Invertimos la velocidad en el eje X
+            self.velocidad[0] = -self.velocidad[0]
+            # Reproducimos el sonido de la raqueta
+            self.sonidoRaqueta.play();
+
+        # Miramos a ver si la pelota elstá en el límite en el eje X
+        if self.rect.left <= 0 or self.rect.right >= MaxX:
+            # Sumamos los puntos al jugador correspondiente
+            if self.rect.left <= 0:
+                jugador2.puntos += 1
+                jugador1.reward -= 100
+                jugador2.reward += 100
+                if jugador2.puntos == 5:
+                    jugador2.reward += 999999
+                    flag = 1
+
+            else:
+                jugador1.puntos += 1
+                jugador1.reward += 100
+                jugador2.reward -= 100
+                if jugador1.puntos == 5:
+                    jugador1.reward += 999999
+                    flag = 1
+
+            # Reproducimos el sonido de los aplausos
+            self.sonidoPunto.play();
+
+            # Realizamos una pausa
+            time.sleep(1)
+            # Ponemos la pelota en el centro
+            self.rect.centerx = MaxX / 2;
+            self.rect.centery = MaxY / 2;
+            # Invertimos la velocidad en el eje X (para que vaya contra el otro jugador)
+            self.velocidad[0] = -self.velocidad[0]
+        
+        jugador1.reward -=1
+        jugador2.reward -=1
+        
+        # Miramos a ver si la pelota está en el límite en el eje Y
+        if self.rect.top <= 0 or self.rect.bottom >= MaxY:
+            # Invertimos la velocidad en el eje Y
+            self.velocidad[1] = -self.velocidad[1]
+        
+        # Actualizamos la posición de la pelota
+        self.rect.move_ip((self.velocidad[0], self.velocidad[1]))
+        
+
+    # Dibuja la pelota
+    def dibuja(self, pantalla):
+        pantalla.blit(self.imagen, self.rect);
+
+
+    
+# -------------------------------------------------
+# Funcion principal del juego
+# -------------------------------------------------
+
+def main():
+
+
+
+    # Inicializar la librería de pygame
+    pygame.init()
+
+    # Sonidos del juego (tomados de http://soungle.com/ )
+    sonidoRaqueta = pygame.mixer.Sound('resources/Ping_Pong.wav');
+    sonidoAplausos = pygame.mixer.Sound('resources/Aplausos.wav');
+
+    # Creamos ambos jugadores
+    jugador1 = Raqueta([50,      MaxY/2], [MaxX/4,   MaxY/8])
+    jugador2 = Raqueta([MaxX-50, MaxY/2], [MaxX*3/4, MaxY/8])
+
+    # Creamos la pelota
+    pelota = Pelota(sonidoRaqueta, sonidoAplausos)
+
+
+    # Creamos la pantalla
+    pantalla = pygame.display.set_mode((MaxX,MaxY))
+
+
+    # Creamos el objeto reloj para sincronizar el juego
+    reloj = pygame.time.Clock()
+
+    # Permitimos que la tecla este pulsada
+    pygame.key.set_repeat(1, 25)
+
+    # Eliminamos el raton
+    pygame.mouse.set_visible(False)
+
+    # Imagen de fondo
+    imagenFondo = pygame.image.load('resources/pistaTenis.JPG').convert();
+
+    # Se muestra el mensaje inicial
+    tipoLetra = pygame.font.SysFont('arial', 96)
+    pantalla.blit(tipoLetra.render('PONG', True, BLANCO), (50, MaxY/4, 200, 100))
+    pantalla.blit(tipoLetra.render('Pulse cualquier tecla', True, BLANCO), (20, MaxY/2, 200, 100))
+    pygame.display.update()
+
+
+#AGENTE INTELIGENTE --------------------------------------------------------------------
+
+    q_table= np.random.uniform(low = -2, high = 0, size = (M,ENV_ACTION_SPACE_N))
+    
+    for episode in range(EPISODES):
+        flag = 0
+        jugador1.puntos=0
+        jugador2.puntos=0
+        # Y se espera hasta que se pulse alguna tecla
+
+
+
+        # Bucle infinito: aqui comienza el juego
+        while (flag == 0):
+
+            # Hacemos que el reloj espere a un determinado fps
+            reloj.tick(60)
+        
+            discrete_state= get_discrete_state(jugador1.rect.centery)
+            action = np.argmax(q_table[discrete_state])
+
+            # Para cada evento posible
+            for evento in pygame.event.get():
+
+                # Si el evento es la pulsación de una tecla
+                if evento.type == KEYDOWN:
+
+                    # Si la tecla es Escape
+                    if evento.key == K_ESCAPE:
+                        # Se sale del programa
+                        pygame.quit()
+                        sys.exit()
+
+                    # si no, si es la tecla 'o'
+                    elif evento.key == K_o:
+                        # Se mueve la raqueta del jugador 2 arriba
+                        jugador2.rect.centery -= velocidadRaquetaY
+
+                    # si no, si es la tecla 'l'
+                    elif evento.key == K_l:
+                        # Se mueve la raqueta del jugador 2 abajo
+                        jugador2.rect.centery += velocidadRaquetaY
+
+
+            if action == 0:
+            # Se mueve la raqueta del jugador 2 arriba
+                jugador1.rect.centery -= velocidadRaquetaY
+
+            # si no, si es la tecla 'l'
+            elif action == 2:
+            # Se mueve la raqueta del jugador 2 abajo
+                jugador1.rect.centery += velocidadRaquetaY
+                
+
+
+            # Comprobamos que ninguna de las dos raquetas se hayan ido por arriba o abajo
+            jugador1.controlaY()
+            jugador2.controlaY()
+
+            # Actualizamos el comportamiento de la pelota
+            pelota.update(jugador1, jugador2)
+
+            #agente inteligente jugador 1
+            new_discrete_state = get_discrete_state(jugador1.rect.centery)
+            max_future_q= np.max(q_table[new_discrete_state])
+            current_q = q_table[discrete_state][action]
+
+            new_q= (1 - LEARNING_RATE) * current_q+ LEARNING_RATE * (jugador1.reward + DISCOUNT * max_future_q)
+            q_table[discrete_state][action] = new_q
+
+            # Ponemos la imagen de fondo
+            pantalla.blit( imagenFondo, (0, 0))
+
+            # Mostramos los marcadores
+            jugador1.marcador(pantalla, BLANCO);
+            jugador2.marcador(pantalla, BLANCO);
+                
+            # Dibujamos cada raqueta
+            jugador1.dibuja(pantalla)
+            jugador2.dibuja(pantalla)
+
+            # Dibujamos la pelota
+            pelota.dibuja(pantalla)
+
+            if (jugador1.puntos == 5) or (jugador2.puntos==5):
+                flag=1
+
+            # Actualizamos la pantalla
+            pygame.display.update()
+
+
+if __name__ == "__main__":
+    main()
