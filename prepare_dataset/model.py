@@ -138,7 +138,7 @@ class Enviroment:
 		im_file = self.path + "/" + im_path
 		print("getting the image....")
 		print("Path : ", im_file)
-		im = cv2.imread(im_file, cv2.IMREAD_GRAYSCALE)
+		im = cv2.imread(im_file)
 		#Now we crop the image
 		#If we consider (0,0) as top left corner of image called im with left-to-right
 		# as x direction and top-to-bottom as y direction. and we have (x1,y1) as the top-left vertex and (x2,y2) 
@@ -217,36 +217,25 @@ class DQNAgent:
         
 
 	
+
     def create_model(self):
-        model   = Sequential()
-        state_shape  = OBSERVATION_SPACE_VALUES
-        model.add(Dense(24, input_shape=(200,400,3), activation="relu"))
-        model.add(Dense(48, activation="relu"))
-        model.add(Dense(24, activation="relu"))
-        model.add(Dense(ACTION_SPACE_SIZE))
-        model.compile(loss="mean_squared_error",
-            optimizer=Adam(lr=0.001))
+        model = Sequential()
+
+        model.add(Conv2D(input_shape=OBSERVATION_SPACE_VALUES,filters=64,kernel_size=(3,3),padding="same", activation="relu"))  # OBSERVATION_SPACE_VALUES = (200, 400, 1) a 200x400 greyscale image.
+        model.add(MaxPooling2D(pool_size=(3, 3)))
+        model.add(Dropout(0.2))
+
+        model.add(Conv2D(256, (3, 3)))
+        model.add(Activation('relu'))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+        model.add(Dropout(0.2))
+
+        model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
+        model.add(Dense(64))
+
+        model.add(Dense(ACTION_SPACE_SIZE, activation='linear')) 
+        model.compile(loss="mse", optimizer=Adam(lr=0.001), metrics=['accuracy'])
         return model
-
-
-    #def create_model(self):
-        #model = Sequential()
-
-        #model.add(Conv2D(input_shape=(200,400,3),filters=64,kernel_size=(3,3),padding="same", activation="relu"))  # OBSERVATION_SPACE_VALUES = (200, 400, 1) a 200x400 greyscale image.
-        #model.add(MaxPooling2D(pool_size=(3, 3)))
-        #model.add(Dropout(0.2))
-
-        #model.add(Conv2D(256, (3, 3)))
-        #model.add(Activation('relu'))
-        #model.add(MaxPooling2D(pool_size=(2, 2)))
-        #model.add(Dropout(0.2))
-
-        #model.add(Flatten())  # this converts our 3D feature maps to 1D feature vectors
-        #model.add(Dense(64))
-
-        #model.add(Dense(ACTION_SPACE_SIZE, activation='linear')) 
-        #model.compile(loss="mse", optimizer=Adam(lr=0.001), metrics=['accuracy'])
-        #return model
 
     # Adds step's data to a memory replay array
     # (observation space, action, reward, new observation space, done)
@@ -259,26 +248,22 @@ class DQNAgent:
         # Start training only if certain number of samples is already saved
         if len(self.replay_memory) < MIN_REPLAY_MEMORY_SIZE:
             return
-		
+
         # Get a minibatch of random samples from memory replay table
-        minibatch = []
-        for i in range(2):
-            minibatch.append(self.replay_memory.pop())
-            
-        print(np.shape(minibatch[0][0]))	
-			
+        samples = random.sample(self.replay_memory, MINIBATCH_SIZE)
+        for sample in samples:
+			# Get current states from minibatch, then query NN model for Q values
+            current_state, action, reward, new_state, done = sample
+            target = self.target_model.predict(current_state)
 
 
         # Get current states from minibatch, then query NN model for Q values
-        current_states = minibatch[0][0]
-        print("Heeeeeeeey!!!!!!1111")
-        print(np.shape(current_states))
-        current_qs_list = self.model.predict(current_states)
+
 
         # Get future states from minibatch, then query NN model for Q values
         # When using target network, query it, otherwise main network should be queried
-        new_current_states = np.array([transition[3] for transition in minibatch])/255
-        future_qs_list = self.target_model.predict(new_current_states)
+
+        future_qs_list = self.target_model.predict(new_state)
 
         X = []
         y = []
@@ -374,3 +359,4 @@ for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
     if epsilon > MIN_EPSILON:
         epsilon *= EPSILON_DECAY
         epsilon = max(MIN_EPSILON, epsilon)
+
