@@ -1,5 +1,6 @@
 import os
 import cv2
+import PIL.Image
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Activation, Flatten
 from keras.optimizers import Adam
@@ -14,9 +15,9 @@ import numpy as np
 import json
 
 
-target_directory = "/home/shadowadri/tfg/dataset/test/images/test_6"
+target_directory = "/home/shadowadri/practice_tfg/dataset/test/images/test_6"
 
-annotation_directory = "/home/shadowadri/tfg/dataset/test/annotations/test_6/ball_markup.json"
+annotation_directory = "/home/shadowadri/practice_tfg/dataset/test/annotations/test_6/ball_markup.json"
 
 
 
@@ -30,6 +31,41 @@ def annotation_list(directory):
 	for key,value in distros_dict.items():
 		aux_list.append(value)
 	return aux_list
+
+
+def _rgb_to_grayscale(image):
+    """
+    Convert an RGB-image into gray-scale using a formula from Wikipedia:
+    https://en.wikipedia.org/wiki/Grayscale
+    """
+
+    # Get the separate colour-channels.
+    r, g, b = image[:, :, 0], image[:, :, 1], image[:, :, 2]
+
+    # Convert to gray-scale using the Wikipedia formula.
+    img_gray = 0.2990 * r + 0.5870 * g + 0.1140 * b
+	
+    return img_gray
+
+
+def pre_process_image(image):
+    """Pre-process a raw image from the game-environment."""
+
+    # Convert image to gray-scale.
+    #img_gray = _rgb_to_grayscale(image=image)
+	
+	#Comment if the image is in RGB and uncomment the previous line
+    img_gray = image
+	
+    # Create PIL-object from numpy array.
+    img = PIL.Image.fromarray(img_gray)
+    # Resize the image.
+#    img_resized = img.resize(resample=PIL.Image.LINEAR)
+
+    # Convert 8-bit pixel values back to floating-point.
+    img = np.float32(img)	
+
+    return img
 
 
 DISCOUNT = 0.99
@@ -131,14 +167,24 @@ class Enviroment:
 			
 		
 	def reset(self):
-		observation = []
+		observation = np.array([])
 		self.step = 0
 		done = False
 		im_path = self.directory[self.step]
 		im_file = self.path + "/" + im_path
 		print("getting the image....")
 		print("Path : ", im_file)
-		im = cv2.imread(im_file)
+		
+		
+		#This part was giving me some error with the image scale, trying different fucntions to solve the problem
+		
+		
+		im = cv2.imread(im_file, cv2.IMREAD_GRAYSCALE)
+		print("*****************************************")
+		print ('img.dtype: ', im.shape)
+		print ('img.dtype: ', im.dtype)
+		print ('img.size: ', im.size)
+
 		#Now we crop the image
 		#If we consider (0,0) as top left corner of image called im with left-to-right
 		# as x direction and top-to-bottom as y direction. and we have (x1,y1) as the top-left vertex and (x2,y2) 
@@ -146,13 +192,19 @@ class Enviroment:
 		# roi = im[y1:y2, x1:x2]
 		# X.append(im[0:100,0:100].copy()) # This will keep only the crops in the memory. 
 									 # im's will be deleted by gc.
-		observation.append(im[self.y1:self.y2, self.x1:self.x2]) # This is what the DQNAgent sees
+		observation = np.array(im[self.y1:self.y2, self.x1:self.x2]) # This is what the DQNAgent sees
+		print ('observation.dtype: ', observation.shape)
+		print ('observation.dtype: ', observation.dtype)
+		print ('observation.size: ', observation.size)	
+		print("************RESET DONE******************")
+		
+		
 		return observation                             
                                      
 		
 	def steps(self, action):
 		#Following the idea of openAI gym an step in our system will be moving the zoom and go to the next frame
-		new_observation = []
+		new_observation = np.array([])
 		self.step += 1
 		done = False
 		if self.step > len(self.directory):
@@ -185,8 +237,23 @@ class Enviroment:
 		if not done:
 			im_path = self.directory[self.step]
 			im_file = self.path + "/" + im_path
-			im = cv2.imread(im_file)
-			new_observation.append(im[self.y1:self.y2, self.x1:self.x2])
+
+		im = cv2.imread(im_file, cv2.IMREAD_GRAYSCALE)
+
+
+		#Now we crop the image
+		#If we consider (0,0) as top left corner of image called im with left-to-right
+		# as x direction and top-to-bottom as y direction. and we have (x1,y1) as the top-left vertex and (x2,y2) 
+		#as the bottom-right vertex of a rectangle region within that image, then:
+		# roi = im[y1:y2, x1:x2]
+		# X.append(im[0:100,0:100].copy()) # This will keep only the crops in the memory. 
+									 # im's will be deleted by gc.
+		new_observation = np.array(im[self.y1:self.y2, self.x1:self.x2]) # This is what the DQNAgent sees
+		print ('new_observation.dtype: ', new_observation.shape)
+		print ('new_observation.dtype: ', new_observation.dtype)
+		print ('new_observation.size: ', new_observation.size)
+		print("*****************************++END STEPS++******************************")
+		pre_process_image(new_observation)
 		
 		return new_observation, reward, done
 			
@@ -244,6 +311,8 @@ class DQNAgent:
 
     # Trains main network every step during episode
     def train(self, terminal_state, step):
+		
+        print("+++++++++++++++++++ENTERING THE HYPE TRAIN. CHOOOOO CHOOOO MOTHERFUCKER+++++++++++++++++++++++++++++++++")
 
         # Start training only if certain number of samples is already saved
         if len(self.replay_memory) < MIN_REPLAY_MEMORY_SIZE:
@@ -254,22 +323,44 @@ class DQNAgent:
         for sample in samples:
 			# Get current states from minibatch, then query NN model for Q values
             current_state, action, reward, new_state, done = sample
-            target = self.target_model.predict(current_state)
+            processed_current_state=pre_process_image(current_state)
+            processed_current_state= np.uint8(processed_current_state)
+            processed_current_state= np.reshape(processed_current_state, (1,200,400,1))
+            processed_current_state= np.uint8(processed_current_state)
+            
+            print ('processed_current_state.shape: ', processed_current_state.shape)
+            print ('processed_current_state.dtype: ', processed_current_state.dtype)
+            print ('processed_current_state.size: ', processed_current_state.size)
 
+            current_qs_list = self.target_model.predict(processed_current_state)
+            print("*****************************++END TRAIN++******************************")
 
         # Get current states from minibatch, then query NN model for Q values
 
 
         # Get future states from minibatch, then query NN model for Q values
         # When using target network, query it, otherwise main network should be queried
+        
+        processed_new_state=pre_process_image(new_state)
+        processed_new_state= np.uint8(processed_new_state)
+        print ('processed_new_state.shape: ', processed_new_state.shape)
+        print ('processed_new_state.dtype: ', processed_new_state.dtype)
+        print ('processed_new_state.size: ', processed_new_state.size)
+        processed_new_state= np.reshape(processed_new_state, (1,200,400,1))
+        processed_new_state= np.uint8(processed_new_state)
+        
+        future_qs_list = self.target_model.predict(processed_new_state)
 
-        future_qs_list = self.target_model.predict(new_state)
+
+        print ('future_qs_list.shape: ', future_qs_list.shape)
+        print ('future_qs_list.dtype: ', future_qs_list.dtype)
+        print ('future_qs_list.size: ', future_qs_list.size)
 
         X = []
         y = []
 
-        # Now we need to enumerate our batches
-        for index, (current_state, action, reward, new_current_state, done) in enumerate(minibatch):
+        # Now we need to enumerate our samples
+        for index, (current_state, action, reward, new_current_state, done) in enumerate(samples):
 
             # If not a terminal state, get new q from future states, otherwise set it to 0
             # almost like with Q Learning, but we use just part of equation here
@@ -318,6 +409,7 @@ for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
     env = Enviroment()
     # Reset environment and get initial state
     current_state = env.reset()
+    processed_current_state = pre_process_image(current_state)
 
     # Reset flag and start iterating until episode ends
     done = False
@@ -326,21 +418,23 @@ for episode in tqdm(range(1, EPISODES + 1), ascii=True, unit='episodes'):
         # This part stays mostly the same, the change is to query a model for Q values
         if np.random.random() > epsilon:
             # Get action from Q table
-            action = np.argmax(agent.get_qs(current_state))
+            action = np.argmax(agent.get_qs(processed_current_state))
         else:
             # Get random action
             action = np.random.randint(0, env.ACTION_SPACE_SIZE)
 
         new_state, reward, done = env.steps(action)
+        processed_new_state = pre_process_image(new_state)
+        
 
         # Transform new continous state to new discrete state and count reward
         episode_reward += reward
 
         # Every step we update replay memory and train main network
-        agent.update_replay_memory((current_state, action, reward, new_state, done))
+        agent.update_replay_memory((processed_current_state, action, reward, processed_new_state, done))
         agent.train(done, step)
 
-        current_state = new_state
+        processed_current_state = new_state
         step += 1
 
     # Append episode reward to a list and log stats (every given number of episodes)
