@@ -1,0 +1,7 @@
+tensorboard --logdir logs/20200829-193032/train
+
+
+
+
+tensorboard --logdir logs/20200830-011156/train
+
