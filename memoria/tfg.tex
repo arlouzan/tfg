@@ -371,6 +371,19 @@ For example, let´s take the game of PacMan where the goal of the agent(PacMan) i
 	\includegraphics[scale=0.50]{rl_agentenv.png}
 	\caption{Reinforcement learning cycle}
 \end{figure}
+
+
+These two core components interact constantly in a way that the Agent attempts to make some changes in  the Environment through actions, and the Environment changes due to the Agent?s actions. How the environment changes to certain actions is defined by a model which may or may not be known by the Agent.\\
+\newpara
+
+When the Agent does not know the model, it needs to make decisions with incomplete information; do model-free RL or try to learn the model explicitly as part of the algorithm.\\
+
+\textbf{State}
+The Environment is represented by a set of variables related to the problem. This set of variables and all the possible values that they can take are referred to as the state space. A state is, a snapshot of the current situation in the enviroment, with all the maximum information about it. In our case, since we had to make our own enviroment, it will be define by the frame of the video and the position of the ball and camera.\\
+
+\textbf{Observation}
+Due that we are considering that the Agent doesn?t have access to the actual full state of the Environment, it is usually called observation the part of the state that the Agent can observe. We also followed this convention in order to make it as close as possible to openAI Gym enviroments
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Q-Learning}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
