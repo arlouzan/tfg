@@ -1,0 +1,144 @@
+\chapter{Introdución}
+\label{chap:introducion}
+
+%\lettrine{P}{rimer} capítulo da memoria, onde xeralmente se exporán as
+%liñas mestras do traballo, os obxectivos, etc. Incluimos un par de
+%exemplos de citas~\cite{ErlangBook,ErlangWebBook} e de referencias
+%internas (sección \ref{sec:mostra}, páxina \pageref{sec:mostra}).
+
+Deep Reinforcement Learning (DRL), a very fast-moving field, is the combination of Reinforcement Learning and Deep Learning and it is also the most trending type of Machine Learning at this moment because it is being able to solve a wide range of complex decision-making tasks that were previously out of reach for a machine to solve real-world problems with human-like intelligence.\\
+In this introduction I will try to explain the fundamentals and concepts around Artificial intelligence and Machine Learning, in order to then deeply dive into our program and how I implemented it.\\
+\subsection{Artificial Intelligence and Machine Learning}
+We can divide Artificial Intelligence into two categories \textbf{Narrow AI} and \textbf{General A.I.}
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[scale=0.25]{imaxes/cattegories_AI.png}
+	\caption{Categories of Artificial Intelligence}
+	\label{categoriesAI}
+\end{figure}
+
+Most of the movies and representations that we see in the mainstream media are around General A.I. Machines that do everything that humans do, and better. It can talk, it can learn to play games, it can communicate... etc \\
+Right now, in our field we are working on narrow A.I. Are machines that can do only one thing and the application of the machine is narrowed to a specific goal. In this field and in the recent years, great advances were made.For instance, AlphaGo defeated the best professional human player in the game of Go. Or last year, for instance, our friend Oriol Vinyals and his team in DeepMind showed the AlphaStar agent beat professional players at the game of StarCraft II. Or a few months later, OpenAI?s Dota-2-playing bot became the first AI system to beat the world champions in an e-sports game.\\
+
+Machine Learning ~\cite{ml4dummies} is one of the many approaches that Artificial Intelligence (AI) uses when it comes to extracting knowledge from experience, not only as a tool to
+achieve the objectives linked to AI but as a vehicle to reduce time and effort
+used for resolution. ML recognizes patterns through the use of examples in
+rather than addressing its implementation. The machine learns a model from examples and
+use this one to solve the problem. A system that continuously learns, that is capable of
+make decisions based on data instead of algorithms and that changes your behavior, it is a system based on ML.
+Given a problem the choice of the appropriate algorithm is not trivial. For this it is necessary
+ask yourself two fundamental questions: what do I want to do? and what information
+I have to achieve my goal? Both require us to carry out an exhaustive analysis of the
+own problem and the data, quantity and quality, that we have for its resolution.
+
+\begin{figure}[hp!]
+	\centering	\includegraphics[scale=0.50]{imaxes/machine_learning.jpeg}
+	\caption{Types of Machine Learning}
+	\label{fig:ml_types}
+\end{figure}
+
+
+Reinforcement Learning is one of the three branches in which ML techniques are generally categorized:
+
+\begin{itemize}
+	\item \textbf{Supervised Learning}is the task of learning from tagged data and its goal is to generalize.
+	\item \textbf{Unsupervised Learning}is the task of learning from unlabeled data and its goal is to compress.
+	\item \textbf{Reinforcement Learning} is the task of learning through trial and error and its goal is to act.
+\end{itemize}
+
+Orthogonal to this categorization we can consider a powerful recent approach to ML, called \textbf{Deep Learning (DL)}, topic of which we have discussed extensively in previous posts. DL is not a separate branch of ML, so it?s not a different task than those described above. DL is a collection of techniques and methods for using neural networks to solve ML tasks, either Supervised Learning, Unsupervised Learning, or Reinforcement Learning and we can represent it graphically in the following figure:
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[scale=0.50]{imaxes/deep_learning.png}
+	\caption{Visual relationship of Deep Learning with the Machine Learning categories.}
+	\label{mlcategories}
+\end{figure}
+
+
+Reinforcement learning ~\cite{reinfLearning}~\cite{introReinf} is a form of machine learning in which an agent attempts to
+learn a policy that maximizes a numeric reward signal~\cite{introReinf}. In reinforcement learning,
+an agent learns by trial and error and discovers optimal actions through its own experiences. Unlike supervised learning, the agent does not learn by comparing its own actions to those of an expert; everything it learns is from its own interactions with the environment. Reinforcement learning attempts to solve optimization problems that are
+defined by a Markov Decision Process (MDP) ~\cite{introReinf}. A A Markov Decision Process defines
+the behavior of the environment by mathematically defining the environment´s one step dynamics.\\
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Background for RL.}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Markov decision process. MDPs and their multiple variants (e.g., Partially Observable MDP or POMDP) ~\cite{puterman} have been proposed to represent and solve sequential decision-making problems under uncertainty.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Elements in Reinforcement Learning}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+In Reinforcement Learning there are two core components:
+\begin{itemize}
+	\item \textbf{An Agent}, that represents the "solution" , which is a computer program with a single role of making decisions (actions) to solve complex decision-making problems under uncertainty.
+	\item \textbf{An Enviroment}, that is the representation of a "problem", which is everything that comes after the decision of the Agent. The environment responds with the consequences of those actions which are observations or states and rewards also sometimes called costs.
+\end{itemize}
+
+
+
+For example, let´s take the game of PacMan where the goal of the agent(PacMan) is to eat the food in the grid while avoiding the ghosts on its way. In this case, the grid world is the interactive environment for the agent where it acts. Agent receives a reward for eating food and punishment if it gets killed by the ghost (loses the game). The states are the location of the agent in the grid world and the total cumulative reward is the agent winning the game.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[scale=0.40]{imaxes/rl_agentenv.png}
+	\caption{Reinforcement learning cycle}
+\end{figure}
+
+
+These two core components interact constantly in a way that the Agent attempts to make some changes in  the Environment through actions, and the Environment changes due to the Agent?s actions. How the environment changes to certain actions is defined by a model which may or may not be known by the Agent.\\
+
+
+When the Agent does not know the model, it needs to make decisions with incomplete information; do model-free RL or try to learn the model explicitly as part of the algorithm.\\
+
+\textbf{State}\\
+The Environment is represented by a set of variables related to the problem. This set of variables and all the possible values that they can take are referred to as the state space. A state is, a snapshot of the current situation in the enviroment, with all the maximum information about it. In our case, since we had to make our own enviroment, it will be define by the frame of the video and the position of the ball and camera.\\
+
+\textbf{Observation}\\
+Due that we are considering that the Agent doesn?t have access to the actual full state of the Environment, it is usually called observation the part of the state that the Agent can observe. We also followed this convention in order to make it as close as possible to openAI Gym enviroments
+
+
+\textbf{Action}\\
+At each state, the Environment has available a set of actions, from which the Agent will choose. The Agent acts on the Environment through these actions and the Environment may change states as a response to the action taken by the Agent. The function that is responsible for this mapping is called transition function or transition probabilities between states.\\
+
+In our case the action will consist in one of the 5 options in order to move the camera, which are: up, down, right, left, and no-action.
+
+
+\textbf{Reward}\\
+The Environment has a defined task that the agent need to complete, then the Enviroment provide to the Agent a reward signal as a direct answer to the Agent?s actions. This reward is a feedback of how well the last action is contributing to achieve the task to be performed in the Environment. The Agent?s goal is to maximize the overall reward it receives and so rewards are the motivation the Agent needs in order to act in a desired behavior.
+
+\textbf{Episode}\\
+The task the Agent is trying to solve may or may not have a natural ending. Tasks that have a natural ending, such as a game, are called episodic tasks. In our case the episodes correspond to a frame in the video, and our agent has to constantly act in the enviroment, that is, continously moving the camera around, the only end is when we reach the last frame of the video.\\
+
+\textbf{Return}\\
+As we will see, Agents may take several time steps and episodes to learn how to solve a task. The sum of rewards collected in a single episode is called a return. Agents are often designed to maximize the return.
+One of the limitations are that these rewards are not disclosed to the Agent until the end of an episode, what we introduced earlier as ?delayed reward?. For example, in the game of tic-tac-toe the rewards for each individual movement (action) are not known until the end of the game. It will be a positive reward if the agent won the game (because the agent had achieved the overall desired outcome) or a negative reward (penalties) if the agent had lost the game.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Exploration vs Exploitation}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Another important characteristic, and challenge in Reinforcement Learning, is the trade-off between ''exploration'' and ''exploitation''. Trying to obtain a lot of rewards, an Agent must prefer actions that it has tried in the past and knows that will be effective actions in producing reward. But to discover such actions, paradoxically, it has to try actions that it has not selected never before.\\
+
+In order to achieve this in our agent we create a variable called epsilon, that will decay until we reach certain minimum value, the agent will get a random float number in the half-open interval [0.0, 1.0) so that if that number is bigger than epsilon, it will take a random action, else the agent will continue with the action with the highest reward.\\
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Q-Learning}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Q-Learning is a model-free form of machine learning, in the sense that the Agent does not need to know or have a model of the environment that it will be in. The same algorithm can be used across a variety of environments.
+
+
+%\section{Sección de mostra}
+%\label{sec:mostra}
+
+
+
+%\subsection{Subsección de mostra}
+
